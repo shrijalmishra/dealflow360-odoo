@@ -1,13 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import App from './App.jsx';
 
-// Conditionally initialize the mock API interceptor
-if (import.meta.env.VITE_USE_MOCK_API === 'true') {
-  console.log('📦 Mock API enabled. Intercepting API requests...');
-  import('./mocks/mockAdapter');
-}
+// MUST import mock adapter BEFORE App so axios interceptors are registered first
+import './mocks/mockAdapter';
+
+import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

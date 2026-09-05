@@ -10,9 +10,9 @@ const SIDEBAR_NAV = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Quotations', path: '/quotations', icon: FileText },
   { name: 'Pipeline', path: '/pipeline', icon: Kanban },
-  { name: 'Approvals', path: '/approvals', icon: CheckSquare },
-  { name: 'Fulfillment', path: '/fulfillment', icon: Truck },
-  { name: 'Billing', path: '/billing', icon: CreditCard },
+  { name: 'Approvals', path: '/approvals/q1', icon: CheckSquare },
+  { name: 'Fulfillment', path: '/fulfillment/o1', icon: Truck },
+  { name: 'Billing', path: '/billing/o1', icon: CreditCard },
   { name: 'Reports', path: '/reports', icon: BarChart2 },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];

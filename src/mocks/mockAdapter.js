@@ -11,70 +11,109 @@ import {
   mockReportData
 } from './mockData';
 
-const mock = new MockAdapter(api, { delayResponse: 500 }); // simulate network delay
+const mock = new MockAdapter(api, { delayResponse: 300 });
 
-// Auth
+// ── Auth ──
 mock.onPost('/auth/login').reply(200, { success: true, data: { token: 'mock-token' } });
 mock.onPost('/auth/signup').reply(200, { success: true, data: { message: 'Account created' } });
 mock.onGet('/auth/me').reply(200, { success: true, data: mockUser });
 
-// Reports
-mock.onGet('/reports').reply(200, { success: true, data: mockReportData });
-
-// Dashboard
+// ── Dashboard ──
 mock.onGet('/dashboard').reply(200, { success: true, data: mockDashboardData });
 
-// Products
+// ── Reports ──
+mock.onGet('/reports').reply(200, { success: true, data: mockReportData });
+
+// ── Products ──
 mock.onGet('/products').reply(200, { success: true, data: mockProducts });
 
-// Quotes
+// ── Quotes List ──
 mock.onGet('/quotes').reply(200, { 
   success: true, 
   data: mockQuotes,
   meta: { page: 1, limit: 20, total: mockQuotes.length }
 });
 
-mock.onGet(/\/quotes\/q[a-zA-Z0-9]+$/).reply((config) => {
-  const quote = mockQuotes[0]; // For demo, always return the canonical quote
-  return [200, { success: true, data: quote }];
-});
-
-// Recalculate Quote (Discount flow)
-mock.onPost(/\/quotes\/q[a-zA-Z0-9]+\/recalculate$/).reply((config) => {
-  // Return the quote with simulated changes
+// ── Single Quote (any ID) ──
+mock.onGet(/\/quotes\/[^/]+$/).reply(() => {
   return [200, { success: true, data: mockQuotes[0] }];
 });
 
-// Recommendations (Upsell)
-mock.onGet(/\/quotes\/q[a-zA-Z0-9]+\/recommendations$/).reply(200, {
+// ── Recalculate ──
+mock.onPost(/\/quotes\/[^/]+\/recalculate/).reply(() => {
+  return [200, { success: true, data: mockQuotes[0] }];
+});
+
+// ── Recommendations ──
+mock.onGet(/\/quotes\/[^/]+\/recommendations/).reply(200, {
   success: true,
   data: mockRecommendations
 });
 
-// Approvals
-mock.onPost(/\/quotes\/q[a-zA-Z0-9]+\/approval\/action$/).reply(200, {
+// ── Quote Lines ──
+mock.onPost(/\/quotes\/[^/]+\/lines/).reply(() => {
+  return [200, { success: true, data: mockQuotes[0] }];
+});
+
+// ── Approval Action ──
+mock.onPost(/\/quotes\/[^/]+\/approval\/action/).reply(200, {
   success: true,
   data: { success: true }
 });
 
-// Fulfillment
-mock.onGet(/\/orders\/[a-zA-Z0-9]+\/fulfillment\/recommendation$/).reply(200, {
+// ── Approval Info ──
+mock.onGet(/\/quotes\/[^/]+\/approval/).reply(() => {
+  return [200, { success: true, data: mockQuotes[0].approval }];
+});
+
+// ── Order Confirm ──
+mock.onPost(/\/quotes\/[^/]+\/confirm/).reply(200, {
+  success: true,
+  data: { id: 'o1', quoteId: 'q1', status: 'CONFIRMED' }
+});
+
+// ── Fulfillment ──
+mock.onGet(/\/orders\/[^/]+\/fulfillment\/recommendation/).reply(200, {
   success: true,
   data: mockOrderFulfillment
 });
 
-// Billing
-mock.onGet(/\/orders\/[a-zA-Z0-9]+\/billing$/).reply(200, {
+mock.onPost(/\/orders\/[^/]+\/fulfillment\/accept/).reply(200, {
+  success: true,
+  data: { success: true }
+});
+
+mock.onPost(/\/orders\/[^/]+\/fulfillment\/consolidate/).reply(200, {
+  success: true,
+  data: mockOrderFulfillment
+});
+
+mock.onPut(/\/orders\/[^/]+\/fulfillment/).reply(200, {
+  success: true,
+  data: mockOrderFulfillment
+});
+
+// ── Billing ──
+mock.onGet(/\/orders\/[^/]+\/billing/).reply(200, {
   success: true,
   data: mockOrderBilling
 });
 
-// Customer Portal
-mock.onGet(/\/portal\/quotes\/[a-zA-Z0-9]+$/).reply(200, {
+mock.onGet(/\/orders\/[^/]+\/invoice/).reply(200, {
+  success: true,
+  data: { id: 'inv1', orderId: 'o1', total: 197400, status: 'PENDING' }
+});
+
+mock.onPost(/\/orders\/[^/]+\/payment/).reply(200, {
+  success: true,
+  data: { id: 'pay1', amount: 197400, status: 'PAID' }
+});
+
+// ── Customer Portal ──
+mock.onGet(/\/portal\/quotes\/[^/]+$/).reply(200, {
   success: true,
   data: {
     ...mockQuotes[0],
-    // Strip internal-only fields for the portal view
     marginAmount: undefined,
     marginPercent: undefined,
     discountRiskScore: undefined,
@@ -82,7 +121,7 @@ mock.onGet(/\/portal\/quotes\/[a-zA-Z0-9]+$/).reply(200, {
   }
 });
 
-mock.onPost(/\/portal\/quotes\/[a-zA-Z0-9]+\/negotiations$/).reply(200, {
+mock.onPost(/\/portal\/quotes\/[^/]+\/negotiations/).reply(200, {
   success: true,
   data: {
     message: 'Your negotiation request has been submitted.',
@@ -91,7 +130,7 @@ mock.onPost(/\/portal\/quotes\/[a-zA-Z0-9]+\/negotiations$/).reply(200, {
   }
 });
 
-mock.onPost(/\/portal\/quotes\/[a-zA-Z0-9]+\/confirm$/).reply(200, {
+mock.onPost(/\/portal\/quotes\/[^/]+\/confirm/).reply(200, {
   success: true,
   data: {
     message: 'Quotation confirmed successfully.',
