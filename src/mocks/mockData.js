@@ -8,12 +8,14 @@ import {
 } from '../constants/enums';
 
 // Users
-export const mockUser = {
-  id: 'u1',
-  name: 'Sarah Sales',
-  role: USER_ROLES.SALES_REP,
-  email: 'sarah@dealflow360.com'
+export const mockUsers = {
+  'sarah@dealflow360.com': { id: 'u1', name: 'Sarah Sales', role: USER_ROLES.SALES_REP, email: 'sarah@dealflow360.com' },
+  'manager@dealflow360.com': { id: 'u2', name: 'Michael Manager', role: USER_ROLES.SALES_MANAGER, email: 'manager@dealflow360.com' },
+  'finance@dealflow360.com': { id: 'u3', name: 'Fiona Finance', role: USER_ROLES.FINANCE, email: 'finance@dealflow360.com' },
+  'admin@dealflow360.com': { id: 'u4', name: 'Alice Admin', role: USER_ROLES.ADMIN, email: 'admin@dealflow360.com' }
 };
+
+export const mockUser = mockUsers['sarah@dealflow360.com'];
 
 // Customers
 export const mockCustomers = [

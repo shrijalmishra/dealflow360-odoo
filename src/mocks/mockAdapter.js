@@ -1,6 +1,7 @@
 import MockAdapter from 'axios-mock-adapter';
 import api from '../services/api';
 import { 
+  mockUsers,
   mockUser, 
   mockQuotes,
   mockProducts, 
@@ -14,9 +15,26 @@ import {
 const mock = new MockAdapter(api, { delayResponse: 300 });
 
 // ── Auth ──
-mock.onPost('/auth/login').reply(200, { success: true, data: { token: 'mock-token' } });
+mock.onPost('/auth/login').reply((config) => {
+  const { email } = JSON.parse(config.data);
+  const token = email === 'manager@dealflow360.com' ? 'mock-token-manager'
+    : email === 'finance@dealflow360.com' ? 'mock-token-finance'
+    : email === 'admin@dealflow360.com' ? 'mock-token-admin'
+    : 'mock-token-sales';
+  return [200, { success: true, data: { token } }];
+});
+
 mock.onPost('/auth/signup').reply(200, { success: true, data: { message: 'Account created' } });
-mock.onGet('/auth/me').reply(200, { success: true, data: mockUser });
+
+mock.onGet('/auth/me').reply((config) => {
+  const token = config.headers.Authorization?.split(' ')[1] || 'mock-token-sales';
+  let email = 'sarah@dealflow360.com';
+  if (token === 'mock-token-manager') email = 'manager@dealflow360.com';
+  else if (token === 'mock-token-finance') email = 'finance@dealflow360.com';
+  else if (token === 'mock-token-admin') email = 'admin@dealflow360.com';
+  
+  return [200, { success: true, data: mockUsers[email] || mockUser }];
+});
 
 // ── Dashboard ──
 mock.onGet('/dashboard').reply(200, { success: true, data: mockDashboardData });

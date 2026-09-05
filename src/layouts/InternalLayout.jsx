@@ -1,23 +1,48 @@
-import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, Kanban, CheckSquare, 
   Truck, CreditCard, BarChart2, Settings,
   Search, Bell, User, RefreshCw, Server, X
 } from 'lucide-react';
+import { me } from '../services/authApi';
 
 const SIDEBAR_NAV = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Quotations', path: '/quotations', icon: FileText },
-  { name: 'Pipeline', path: '/pipeline', icon: Kanban },
-  { name: 'Approvals', path: '/approvals/q1', icon: CheckSquare },
-  { name: 'Fulfillment', path: '/fulfillment/o1', icon: Truck },
-  { name: 'Billing', path: '/billing/o1', icon: CreditCard },
-  { name: 'Reports', path: '/reports', icon: BarChart2 },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['SALES_REP', 'SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
+  { name: 'Quotations', path: '/quotations', icon: FileText, roles: ['SALES_REP', 'ADMIN'] },
+  { name: 'Pipeline', path: '/pipeline', icon: Kanban, roles: ['SALES_REP', 'SALES_MANAGER', 'ADMIN'] },
+  { name: 'Approvals', path: '/approvals/q1', icon: CheckSquare, roles: ['SALES_MANAGER', 'ADMIN'] },
+  { name: 'Fulfillment', path: '/fulfillment/o1', icon: Truck, roles: ['FINANCE', 'OPERATIONS', 'ADMIN'] },
+  { name: 'Billing', path: '/billing/o1', icon: CreditCard, roles: ['FINANCE', 'OPERATIONS', 'ADMIN'] },
+  { name: 'Reports', path: '/reports', icon: BarChart2, roles: ['SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
+  { name: 'Settings', path: '/settings', icon: Settings, roles: ['SALES_REP', 'SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
 ];
 
 export default function InternalLayout() {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await me();
+        setUser(res.data);
+      } catch (err) {
+        navigate('/login');
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('dealflow_token');
+    navigate('/login');
+  };
+
+  if (!user) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+
+  const allowedNav = SIDEBAR_NAV.filter(item => item.roles.includes(user.role));
+
   return (
     <div className="flex h-screen w-full bg-gray-50 overflow-hidden text-sm">
       
@@ -27,7 +52,7 @@ export default function InternalLayout() {
           DEALFLOW360
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          {SIDEBAR_NAV.map((item) => (
+          {allowedNav.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}
@@ -71,9 +96,9 @@ export default function InternalLayout() {
                 <Server className="w-3.5 h-3.5 mr-1.5" />
                 Go to Back-end
               </button>
-              <button className="flex items-center text-gray-600 hover:text-gray-900 text-xs font-medium">
+              <button onClick={handleLogout} className="flex items-center text-gray-600 hover:text-gray-900 text-xs font-medium">
                 <X className="w-3.5 h-3.5 mr-1.5" />
-                Close Workspace
+                Logout
               </button>
             </div>
 
@@ -88,8 +113,8 @@ export default function InternalLayout() {
                   <User className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-900">Sarah Sales</span>
-                  <span className="text-[10px] text-gray-500 uppercase">Sales Rep</span>
+                  <span className="text-xs font-semibold text-gray-900">{user.name}</span>
+                  <span className="text-[10px] text-gray-500 uppercase">{user.role.replace('_', ' ')}</span>
                 </div>
               </div>
             </div>

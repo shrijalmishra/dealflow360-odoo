@@ -64,7 +64,24 @@ export default function Login() {
         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
         {loading ? 'Signing in...' : 'Sign In'}
       </button>
-      <p className="text-center text-sm text-gray-500">
+
+      {/* Quick Login Helpers for Demo */}
+      <div className="pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500 mb-2 text-center uppercase tracking-wider font-semibold">Demo Accounts</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setEmail('sarah@dealflow360.com')} className="text-xs py-1.5 border border-gray-300 rounded hover:bg-gray-50">Sales Rep</button>
+          <button type="button" onClick={() => setEmail('manager@dealflow360.com')} className="text-xs py-1.5 border border-gray-300 rounded hover:bg-gray-50">Manager</button>
+          <button type="button" onClick={() => setEmail('finance@dealflow360.com')} className="text-xs py-1.5 border border-gray-300 rounded hover:bg-gray-50">Finance / Ops</button>
+          <button type="button" onClick={() => setEmail('admin@dealflow360.com')} className="text-xs py-1.5 border border-gray-300 rounded hover:bg-gray-50">Admin</button>
+        </div>
+        <div className="mt-3 text-center">
+          <Link to="/customer/quotes/demo-token-123" className="text-xs text-primary-600 hover:underline">
+            View Customer Portal Demo &rarr;
+          </Link>
+        </div>
+      </div>
+
+      <p className="text-center text-sm text-gray-500 pt-2">
         Don't have an account?{' '}
         <Link to="/signup" className="text-primary-600 hover:underline font-medium">Sign Up</Link>
       </p>
