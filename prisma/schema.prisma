@@ -1,0 +1,517 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// IDENTITY & ACCESS
+// ============================================================
+
+enum RoleName {
+  SALES_REP
+  SALES_MANAGER
+  FINANCE_OPS
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          RoleName
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quotationsOwned   Quotation[]        @relation("RepQuotations")
+  approvalDecisions ApprovalDecision[]
+  auditLogs         AuditLog[]
+  customers         Customer[]         @relation("AssignedRep")
+}
+
+model CustomerPortalUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================
+// CUSTOMER & PRICING
+// ============================================================
+
+enum CustomerTierName {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+model CustomerTier {
+  id                     String   @id @default(uuid())
+  name                   CustomerTierName @unique
+  defaultDiscountCeiling Float // e.g. 5, 10, 15 (percent)
+  customers              Customer[]
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  name           String
+  tierId         String
+  tier           CustomerTier @relation(fields: [tierId], references: [id])
+  currency       String   @default("INR")
+  assignedRepId  String?
+  assignedRep    User?    @relation("AssignedRep", fields: [assignedRepId], references: [id])
+  createdAt      DateTime @default(now())
+
+  portalUsers CustomerPortalUser[]
+  quotations  Quotation[]
+  priceListEntries PriceListEntry[]
+}
+
+model ProductCategory {
+  id               String  @id @default(uuid())
+  name             String  @unique
+  discountCeiling  Float   // percent, e.g. Hardware=15, Services=10
+  products         Product[]
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  categoryId   String
+  category     ProductCategory @relation(fields: [categoryId], references: [id])
+  basePrice    Float
+  unit         String   @default("unit")
+  taxRatePct   Float    @default(0)
+  costPrice    Float    @default(0) // used to compute margin
+  isSubscription Boolean @default(false)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  variants         ProductVariant[]
+  priceListEntries PriceListEntry[]
+  warehouseStock   WarehouseInventory[]
+  quotationLines   QuotationLine[]
+  subscriptionPlans SubscriptionPlan[]
+  coPurchaseFrom   CoPurchaseStat[] @relation("FromProduct")
+  coPurchaseTo     CoPurchaseStat[] @relation("ToProduct")
+  promotion        PromotionFlag?
+}
+
+model ProductVariant {
+  id         String  @id @default(uuid())
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  attribute  String  // e.g. "RAM"
+  value      String  // e.g. "32GB"
+  extraPrice Float   @default(0)
+}
+
+model PriceListEntry {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  tierName   CustomerTierName?
+  currency   String   @default("INR")
+  price      Float
+
+  @@index([productId, tierName, currency])
+}
+
+// ============================================================
+// QUOTATION CORE
+// ============================================================
+
+enum QuotationStatus {
+  DRAFT
+  PENDING_MANAGER_APPROVAL
+  PENDING_FINANCE_APPROVAL
+  REVISION_REQUIRED
+  APPROVED
+  SENT_TO_CUSTOMER
+  UNDER_NEGOTIATION
+  APPROVAL_REQUIRED_AGAIN
+  CUSTOMER_CONFIRMED
+  ORDER_CREATED
+  FULFILLMENT
+  PARTIALLY_FULFILLED
+  FULFILLED
+  INVOICED
+  PARTIALLY_PAID
+  PAID
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum LineType {
+  ONE_TIME
+  RECURRING
+}
+
+model Quotation {
+  id               String   @id @default(uuid())
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id])
+  repId            String
+  rep              User     @relation("RepQuotations", fields: [repId], references: [id])
+  status           QuotationStatus @default(DRAFT)
+  currentVersionNo Int      @default(1)
+  lastActivityAt   DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  versions           QuotationVersion[]
+  negotiationEvents  NegotiationEvent[]
+  dealAlerts         DealAlert[]
+  fulfillments       Fulfillment[]
+  invoices           Invoice[]
+}
+
+model QuotationVersion {
+  id             String   @id @default(uuid())
+  quotationId    String
+  quotation      Quotation @relation(fields: [quotationId], references: [id])
+  versionNumber  Int
+  createdAt      DateTime @default(now())
+
+  lines            QuotationLine[]
+  riskAssessment   RiskAssessment?
+  approvalRequest  ApprovalRequest?
+
+  @@unique([quotationId, versionNumber])
+}
+
+model QuotationLine {
+  id            String   @id @default(uuid())
+  versionId     String
+  version       QuotationVersion @relation(fields: [versionId], references: [id])
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  quantity      Int
+  unitPrice     Float      // resolved price at time of quoting
+  discountPct   Float      @default(0)
+  lineType      LineType   @default(ONE_TIME)
+  allowedDiscountPct Float // effective ceiling captured for audit purposes
+  fromRecommendation Boolean @default(false)
+
+  invoiceLines InvoiceLine[]
+}
+
+// ============================================================
+// DISCOUNT GOVERNANCE / RISK / APPROVAL
+// ============================================================
+
+model RiskAssessment {
+  id            String   @id @default(uuid())
+  versionId     String   @unique
+  version       QuotationVersion @relation(fields: [versionId], references: [id])
+  blendedScore  Float
+  worstLineExcessPct Float
+  totalExcessValue   Float
+  computedAt    DateTime @default(now())
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model ApprovalRule {
+  id            String   @id @default(uuid())
+  riskLevel     RiskLevel @unique
+  requiredSteps Json
+  minScore      Float
+  maxScore      Float
+}
+
+enum ApprovalStepStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED_FOR_REVISION
+}
+
+model ApprovalRequest {
+  id           String   @id @default(uuid())
+  versionId    String   @unique
+  version      QuotationVersion @relation(fields: [versionId], references: [id])
+  currentStep  String   // "SALES_MANAGER" | "FINANCE_OPS" | null when done
+  status       ApprovalStepStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+
+  decisions ApprovalDecision[]
+}
+
+model ApprovalDecision {
+  id          String   @id @default(uuid())
+  requestId   String
+  request     ApprovalRequest @relation(fields: [requestId], references: [id])
+  approverId  String
+  approver    User     @relation(fields: [approverId], references: [id])
+  step        String
+  decision    ApprovalStepStatus
+  reason      String?
+  timestamp   DateTime @default(now())
+}
+
+// ============================================================
+// RECOMMENDATION ENGINE
+// ============================================================
+
+model CoPurchaseStat {
+  id              String  @id @default(uuid())
+  fromProductId   String
+  fromProduct     Product @relation("FromProduct", fields: [fromProductId], references: [id])
+  toProductId     String
+  toProduct       Product @relation("ToProduct", fields: [toProductId], references: [id])
+  strengthScore   Float   // 0-1
+
+  @@unique([fromProductId, toProductId])
+}
+
+model PromotionFlag {
+  id          String  @id @default(uuid())
+  productId   String  @unique
+  product     Product @relation(fields: [productId], references: [id])
+  active      Boolean @default(true)
+  boostWeight Float   @default(1.0)
+}
+
+// ============================================================
+// FULFILLMENT
+// ============================================================
+
+model Warehouse {
+  id                 String  @id @default(uuid())
+  name               String
+  location           String?
+  shippingCostWeight Float   @default(1.0)
+
+  inventory   WarehouseInventory[]
+  allocations FulfillmentAllocation[]
+}
+
+model WarehouseInventory {
+  id            String   @id @default(uuid())
+  warehouseId   String
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  availableQty  Int      @default(0)
+  reservedQty   Int      @default(0)
+  reorderLevel  Int      @default(0)
+
+  @@unique([warehouseId, productId])
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PARTIALLY_FULFILLED
+  FULFILLED
+  BACKORDERED
+}
+
+model Fulfillment {
+  id           String   @id @default(uuid())
+  quotationId  String
+  quotation    Quotation @relation(fields: [quotationId], references: [id])
+  status       FulfillmentStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+
+  allocations FulfillmentAllocation[]
+  backorders  Backorder[]
+}
+
+model FulfillmentAllocation {
+  id             String   @id @default(uuid())
+  fulfillmentId  String
+  fulfillment    Fulfillment @relation(fields: [fulfillmentId], references: [id])
+  warehouseId    String
+  warehouse      Warehouse @relation(fields: [warehouseId], references: [id])
+  productId      String
+  quantity       Int
+  manualOverride Boolean  @default(false)
+}
+
+model Backorder {
+  id             String   @id @default(uuid())
+  fulfillmentId  String
+  fulfillment    Fulfillment @relation(fields: [fulfillmentId], references: [id])
+  productId      String
+  qtyPending     Int
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
+}
+
+// ============================================================
+// SUBSCRIPTIONS & BILLING
+// ============================================================
+
+enum BillingFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model SubscriptionPlan {
+  id               String  @id @default(uuid())
+  productId        String
+  product          Product @relation(fields: [productId], references: [id])
+  frequency        BillingFrequency
+  price            Float
+  prorationRule    String  @default("DAILY_PRORATION") // configurable strategy key
+  cancellationRule String  @default("END_OF_CYCLE")
+  refundRule       String  @default("PRORATED_PARTIAL")
+
+  subscriptions Subscription[]
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id               String   @id @default(uuid())
+  quotationId      String
+  planId           String
+  plan             SubscriptionPlan @relation(fields: [planId], references: [id])
+  startDate        DateTime @default(now())
+  nextBillingDate  DateTime
+  status           SubscriptionStatus @default(ACTIVE)
+
+  billingSchedules BillingSchedule[]
+  creditNotes      CreditNote[]
+}
+
+model BillingSchedule {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  dueDate        DateTime
+  amount         Float
+  invoiced       Boolean  @default(false)
+}
+
+enum InvoiceType {
+  ONE_TIME
+  RECURRING
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
+  type        InvoiceType
+  total       Float
+  status      InvoiceStatus @default(UNPAID)
+  createdAt   DateTime @default(now())
+
+  lines    InvoiceLine[]
+  payments Payment[]
+}
+
+model InvoiceLine {
+  id               String   @id @default(uuid())
+  invoiceId        String
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  quotationLineId  String?
+  quotationLine    QuotationLine? @relation(fields: [quotationLineId], references: [id])
+  description      String
+  amount           Float
+}
+
+model Payment {
+  id         String   @id @default(uuid())
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  amount     Float
+  method     String
+  timestamp  DateTime @default(now())
+}
+
+model CreditNote {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  amount         Float
+  reason         String
+  createdAt      DateTime @default(now())
+}
+
+// ============================================================
+// NEGOTIATION
+// ============================================================
+
+enum NegotiationEventType {
+  LINE_COMMENT
+  CHANGE_REQUEST
+  COUNTER_DISCOUNT
+  CONFIRM_QUOTE
+}
+
+model NegotiationEvent {
+  id          String   @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
+  type        NegotiationEventType
+  payload     Json
+  actor       String   // customer portal user id or "customer"
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// DEAL HEALTH / MONITORING
+// ============================================================
+
+enum DealAlertType {
+  STALLED
+  DISCOUNT_ANOMALY
+  DELIVERY_RISK
+}
+
+model DealAlert {
+  id           String   @id @default(uuid())
+  quotationId  String
+  quotation    Quotation @relation(fields: [quotationId], references: [id])
+  type         DealAlertType
+  detail       String?
+  triggeredAt  DateTime @default(now())
+  resolved     Boolean  @default(false)
+}
+
+// ============================================================
+// AUDIT
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  oldValue   Json?
+  newValue   Json?
+  reason     String?
+  timestamp  DateTime @default(now())
+}
