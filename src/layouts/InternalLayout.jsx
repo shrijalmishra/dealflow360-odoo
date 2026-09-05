@@ -3,19 +3,38 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, Kanban, CheckSquare, 
   Truck, CreditCard, BarChart2, Settings,
-  Search, Bell, User, RefreshCw, Server, X
+  Search, Bell, User, RefreshCw, Server, X,
+  ShieldAlert, Package, Warehouse, AlertTriangle, ClipboardList
 } from 'lucide-react';
 import { me } from '../services/authApi';
 
 const SIDEBAR_NAV = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['SALES_REP', 'SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
-  { name: 'Quotations', path: '/quotations', icon: FileText, roles: ['SALES_REP', 'ADMIN'] },
-  { name: 'Pipeline', path: '/pipeline', icon: Kanban, roles: ['SALES_REP', 'SALES_MANAGER', 'ADMIN'] },
-  { name: 'Approvals', path: '/approvals/q1', icon: CheckSquare, roles: ['SALES_MANAGER', 'ADMIN'] },
-  { name: 'Fulfillment', path: '/fulfillment/o1', icon: Truck, roles: ['FINANCE', 'OPERATIONS', 'ADMIN'] },
-  { name: 'Billing', path: '/billing/o1', icon: CreditCard, roles: ['FINANCE', 'OPERATIONS', 'ADMIN'] },
-  { name: 'Reports', path: '/reports', icon: BarChart2, roles: ['SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
-  { name: 'Settings', path: '/settings', icon: Settings, roles: ['SALES_REP', 'SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
+  // ── SALES REP ──
+  { name: 'Dashboard',         path: '/dashboard',         icon: LayoutDashboard, roles: ['SALES_REP', 'ADMIN'] },
+  { name: 'Quotations',        path: '/quotations',        icon: FileText,         roles: ['SALES_REP', 'ADMIN'] },
+  { name: 'Pipeline',          path: '/pipeline',          icon: Kanban,           roles: ['SALES_REP', 'SALES_MANAGER', 'ADMIN'] },
+
+  // ── SALES MANAGER ──
+  { name: 'Dashboard',         path: '/dashboard',         icon: LayoutDashboard, roles: ['SALES_MANAGER'] },
+  { name: 'Approvals',         path: '/approvals/q1',      icon: CheckSquare,      roles: ['SALES_MANAGER', 'ADMIN'] },
+  { name: 'Reports',           path: '/reports',           icon: BarChart2,        roles: ['SALES_MANAGER', 'ADMIN'] },
+
+  // ── FINANCE ──
+  { name: 'Dashboard',         path: '/dashboard',         icon: LayoutDashboard, roles: ['FINANCE'] },
+  { name: 'Finance Approvals', path: '/finance-approvals', icon: ShieldAlert,      roles: ['FINANCE'] },
+  { name: 'Billing',           path: '/billing/o1',        icon: CreditCard,       roles: ['FINANCE', 'ADMIN'] },
+  { name: 'Reports',           path: '/reports',           icon: BarChart2,        roles: ['FINANCE'] },
+
+  // ── OPERATIONS ──
+  { name: 'Ops Dashboard',     path: '/ops-dashboard',     icon: LayoutDashboard, roles: ['OPERATIONS'] },
+  { name: 'Orders',            path: '/orders',            icon: ClipboardList,    roles: ['OPERATIONS'] },
+  { name: 'Fulfillment',       path: '/fulfillment/o1',    icon: Truck,            roles: ['OPERATIONS', 'ADMIN'] },
+  { name: 'Warehouses',        path: '/warehouses',        icon: Warehouse,        roles: ['OPERATIONS'] },
+  { name: 'Inventory',         path: '/inventory',         icon: Package,          roles: ['OPERATIONS'] },
+  { name: 'Backorders',        path: '/backorders',        icon: AlertTriangle,    roles: ['OPERATIONS'] },
+
+  // ── SHARED / ADMIN ──
+  { name: 'Settings',          path: '/settings',          icon: Settings,         roles: ['SALES_REP', 'SALES_MANAGER', 'FINANCE', 'OPERATIONS', 'ADMIN'] },
 ];
 
 export default function InternalLayout() {

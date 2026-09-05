@@ -19,6 +19,7 @@ mock.onPost('/auth/login').reply((config) => {
   const { email } = JSON.parse(config.data);
   const token = email === 'manager@dealflow360.com' ? 'mock-token-manager'
     : email === 'finance@dealflow360.com' ? 'mock-token-finance'
+    : email === 'ops@dealflow360.com' ? 'mock-token-ops'
     : email === 'admin@dealflow360.com' ? 'mock-token-admin'
     : 'mock-token-sales';
   return [200, { success: true, data: { token } }];
@@ -31,6 +32,7 @@ mock.onGet('/auth/me').reply((config) => {
   let email = 'sarah@dealflow360.com';
   if (token === 'mock-token-manager') email = 'manager@dealflow360.com';
   else if (token === 'mock-token-finance') email = 'finance@dealflow360.com';
+  else if (token === 'mock-token-ops') email = 'ops@dealflow360.com';
   else if (token === 'mock-token-admin') email = 'admin@dealflow360.com';
   
   return [200, { success: true, data: mockUsers[email] || mockUser }];
