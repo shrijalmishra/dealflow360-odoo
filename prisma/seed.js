@@ -13,11 +13,13 @@ async function main() {
       update: {},
       create: { name: "BRONZE", defaultDiscountCeiling: 5 },
     }),
+
     prisma.customerTier.upsert({
       where: { name: "SILVER" },
       update: {},
       create: { name: "SILVER", defaultDiscountCeiling: 10 },
     }),
+
     prisma.customerTier.upsert({
       where: { name: "GOLD" },
       update: {},
@@ -29,25 +31,80 @@ async function main() {
   const hardware = await prisma.productCategory.upsert({
     where: { name: "Hardware" },
     update: {},
-    create: { name: "Hardware", discountCeiling: 15 },
+    create: {
+      name: "Hardware",
+      discountCeiling: 15,
+    },
   });
+
   const services = await prisma.productCategory.upsert({
     where: { name: "Services" },
     update: {},
-    create: { name: "Services", discountCeiling: 10 },
+    create: {
+      name: "Services",
+      discountCeiling: 10,
+    },
   });
+
   const subscriptions = await prisma.productCategory.upsert({
     where: { name: "Subscriptions" },
     update: {},
-    create: { name: "Subscriptions", discountCeiling: 10 },
+    create: {
+      name: "Subscriptions",
+      discountCeiling: 10,
+    },
+  });
+
+  // --- Subscription product ---
+  const enterpriseSupport = await prisma.product.upsert({
+    where: {
+      id: "seed-enterprise-support",
+    },
+    update: {},
+    create: {
+      id: "seed-enterprise-support",
+      name: "Enterprise IT Support",
+      description:
+        "Recurring enterprise technical support and maintenance service",
+      categoryId: subscriptions.id,
+      basePrice: 12000,
+      unit: "month",
+      taxRatePct: 18,
+      costPrice: 6000,
+      isSubscription: true,
+      active: true,
+    },
+  });
+
+  // --- Monthly subscription plan ---
+  await prisma.subscriptionPlan.upsert({
+    where: {
+      id: "seed-enterprise-support-monthly",
+    },
+    update: {},
+    create: {
+      id: "seed-enterprise-support-monthly",
+      productId: enterpriseSupport.id,
+      frequency: "MONTHLY",
+      price: 12000,
+      prorationRule: "DAILY_PRORATION",
+      cancellationRule: "END_OF_CYCLE",
+      refundRule: "PRORATED_PARTIAL",
+    },
   });
 
   // --- Approval routing rules ---
   await prisma.approvalRule.upsert({
     where: { riskLevel: "LOW" },
     update: {},
-    create: { riskLevel: "LOW", requiredSteps: [], minScore: 0, maxScore: 20 },
+    create: {
+      riskLevel: "LOW",
+      requiredSteps: [],
+      minScore: 0,
+      maxScore: 20,
+    },
   });
+
   await prisma.approvalRule.upsert({
     where: { riskLevel: "MEDIUM" },
     update: {},
@@ -58,6 +115,7 @@ async function main() {
       maxScore: 60,
     },
   });
+
   await prisma.approvalRule.upsert({
     where: { riskLevel: "HIGH" },
     update: {},
@@ -71,6 +129,7 @@ async function main() {
 
   // --- Admin user so the very first login works ---
   const adminPasswordHash = await bcrypt.hash("Admin@12345", 10);
+
   await prisma.user.upsert({
     where: { email: "admin@dealflow360.test" },
     update: {},
@@ -93,6 +152,7 @@ async function main() {
       shippingCostWeight: 1.0,
     },
   });
+
   await prisma.warehouse.upsert({
     where: { id: "seed-east-depot" },
     update: {},
@@ -106,6 +166,9 @@ async function main() {
 
   console.log("Seed complete.");
   console.log("Login with: admin@dealflow360.test / Admin@12345");
+  console.log(
+    "Subscription product created: Enterprise IT Support - ₹12,000/month"
+  );
 }
 
 main()

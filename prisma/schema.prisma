@@ -212,13 +212,14 @@ model QuotationLine {
 // ============================================================
 
 model RiskAssessment {
-  id            String   @id @default(uuid())
-  versionId     String   @unique
-  version       QuotationVersion @relation(fields: [versionId], references: [id])
-  blendedScore  Float
+  id                String   @id @default(uuid())
+  versionId         String   @unique
+  version          QuotationVersion @relation(fields: [versionId], references: [id])
+  riskLevel         RiskLevel @default(LOW)
+  blendedScore      Float
   worstLineExcessPct Float
   totalExcessValue   Float
-  computedAt    DateTime @default(now())
+  computedAt        DateTime @default(now())
 }
 
 enum RiskLevel {

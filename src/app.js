@@ -1,33 +1,107 @@
 const express = require("express");
+
 const cors = require("cors");
+
 const morgan = require("morgan");
 
 const authRoutes = require("./modules/auth/routes");
-const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
+
+const {
+  notFoundHandler,
+  errorHandler,
+} = require("./middleware/errorHandler");
 
 const app = express();
 
 app.use(cors());
+
 app.use(express.json());
-app.use(morgan(process.env.NODE_ENV === "development" ? "dev" : "combined"));
 
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+app.use(
+  morgan(
+    process.env.NODE_ENV === "development"
+      ? "dev"
+      : "combined"
+  )
+);
 
-app.use("/api/auth", authRoutes);
+// Health check
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+  });
+});
 
-// As each module gets built out, mount it here, e.g.:
-// app.use("/api/customers", require("./modules/customers/routes"));
-// app.use("/api/products", require("./modules/products/routes"));
-// app.use("/api/quotations", require("./modules/quotations/routes"));
-// app.use("/api/approvals", require("./modules/approvals/routes"));
-// app.use("/api/warehouses", require("./modules/warehouses/routes"));
-// app.use("/api/fulfillment", require("./modules/fulfillment/routes"));
-// app.use("/api/billing", require("./modules/billing/routes"));
+// Authentication
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+// Products
+app.use(
+  "/api/products",
+  require("./modules/products/routes")
+);
+
+// Price Lists
+app.use(
+  "/api/price-lists",
+  require("./modules/products/priceListRoutes")
+);
+
+// Customers
+app.use(
+  "/api/customers",
+  require("./modules/customers/routes")
+);
+
+// Quotations
+app.use(
+  "/api/quotations",
+  require("./modules/quotations/routes")
+);
+
+// Discount Risk
+app.use(
+  "/api/discount-risk",
+  require("./modules/discountRisk/routes")
+);
+
+// Approvals
+app.use(
+  "/api/approvals",
+  require("./modules/approvals/routes")
+);
+
+// Warehouses
+app.use(
+  "/api/warehouses",
+  require("./modules/warehouses/routes")
+);
+
+// Billing
+app.use(
+  "/api/billing",
+  require("./modules/billing/routes")
+);
+
+// Subscriptions
+app.use(
+  "/api/subscriptions",
+  require("./modules/subscriptions/routes")
+);
+
+// Other modules will be mounted as they are built:
 // app.use("/api/negotiation", require("./modules/negotiation/routes"));
 // app.use("/api/deal-health", require("./modules/dealHealth/routes"));
 // app.use("/api/reporting", require("./modules/reporting/routes"));
+// app.use("/api/recommendations", require("./modules/recommendations/routes"));
 
+// 404 handler
 app.use(notFoundHandler);
+
+// Global error handler
 app.use(errorHandler);
 
 module.exports = app;
