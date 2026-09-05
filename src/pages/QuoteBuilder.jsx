@@ -1,5 +1,260 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getQuoteById, recalculateQuote } from '../services/quoteApi';
+import { getProducts } from '../services/productApi';
+import { Card, Button, StatusBadge } from '../components/common/UI';
+import { formatMoney, formatPercent, formatDate } from '../utils/formatters';
+import { Plus, Trash2, RefreshCw, Save, Send } from 'lucide-react';
 
 export default function QuoteBuilder() {
-  return <div className='p-6'><h2>QuoteBuilder Page</h2><p>Placeholder content</p></div>;
+  const { quoteId } = useParams();
+  
+  const [quote, setQuote] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+
+  // Local state for edits before recalculation
+  const [editedLines, setEditedLines] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Using fixed ID for canonical demo if quoteId is undefined or missing
+        const qId = quoteId || 'q1';
+        
+        const [quoteRes, productRes] = await Promise.all([
+          getQuoteById(qId),
+          getProducts()
+        ]);
+        
+        setQuote(quoteRes.data);
+        setEditedLines(quoteRes.data.lines || []);
+        setProducts(productRes.data);
+      } catch (error) {
+        console.error('Error fetching quote data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [quoteId]);
+
+  const handleLineChange = (index, field, value) => {
+    const newLines = [...editedLines];
+    newLines[index] = { ...newLines[index], [field]: Number(value) };
+    setEditedLines(newLines);
+  };
+
+  const handleRemoveLine = (index) => {
+    const newLines = [...editedLines];
+    newLines.splice(index, 1);
+    setEditedLines(newLines);
+  };
+
+  const handleAddProduct = (product) => {
+    setEditedLines([
+      ...editedLines,
+      {
+        id: `newLine-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        type: product.type,
+        quantity: 1,
+        unitPrice: product.price,
+        discountPercent: 0,
+        discountAmount: 0,
+        tax: product.price * 0.18, // Rough mock tax calculation for UI only
+        lineTotal: product.price,
+        margin: product.margin
+      }
+    ]);
+  };
+
+  const handleRecalculate = async () => {
+    try {
+      setRecalculating(true);
+      const payload = { lines: editedLines };
+      const response = await recalculateQuote(quote.id, payload);
+      
+      // Update with authoritative backend values
+      setQuote(response.data);
+      setEditedLines(response.data.lines);
+    } catch (error) {
+      console.error('Recalculation failed:', error);
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading Quote...</div>;
+  if (!quote) return <div className="p-8 text-center text-red-500">Failed to load quote.</div>;
+
+  return (
+    <div className="flex flex-col h-full space-y-4">
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{quote.quoteNumber} — {quote.customerName}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Created: {formatDate(quote.created)} | Rep: {quote.assignedRep}
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <StatusBadge status={quote.status} />
+          <Button variant="outline" onClick={handleRecalculate} disabled={recalculating}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${recalculating ? 'animate-spin' : ''}`} />
+            Recalculate
+          </Button>
+          <Button variant="outline"><Save className="w-4 h-4 mr-2" /> Save Draft</Button>
+          <Button variant="primary"><Send className="w-4 h-4 mr-2" /> Submit Quote</Button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 gap-6 min-h-0 overflow-hidden">
+        
+        {/* LEFT PANE: PRODUCT SELECTION */}
+        <Card className="w-1/4 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50 font-semibold">
+            Product Catalog
+          </div>
+          <div className="p-4 overflow-y-auto flex-1 space-y-3">
+            {products.map(p => (
+              <div key={p.id} className="border border-gray-200 p-3 rounded-md hover:border-primary-300 transition-colors flex justify-between items-center bg-white shadow-sm">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{p.name}</p>
+                  <p className="text-xs text-gray-500">{formatMoney(p.price)} • {p.type.replace('_', ' ')}</p>
+                </div>
+                <button 
+                  onClick={() => handleAddProduct(p)}
+                  className="w-8 h-8 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* CENTER PANE: QUOTE LINES & SUMMARY */}
+        <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+          
+          <Card className="flex-1 overflow-y-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200 sticky top-0">
+                <tr>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3 w-20">Qty</th>
+                  <th className="px-4 py-3">Unit Price</th>
+                  <th className="px-4 py-3 w-24">Disc %</th>
+                  <th className="px-4 py-3 text-right">Line Total</th>
+                  <th className="px-4 py-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {editedLines.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                      No products added to this quote yet.
+                    </td>
+                  </tr>
+                ) : (
+                  editedLines.map((line, idx) => (
+                    <tr key={line.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900">{line.productName}</p>
+                        <p className="text-xs text-gray-500">{line.type}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="number" 
+                          min="1"
+                          value={line.quantity}
+                          onChange={(e) => handleLineChange(idx, 'quantity', e.target.value)}
+                          className="w-16 p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{formatMoney(line.unitPrice)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center">
+                          <input 
+                            type="number" 
+                            min="0"
+                            max="100"
+                            value={line.discountPercent}
+                            onChange={(e) => handleLineChange(idx, 'discountPercent', e.target.value)}
+                            className="w-16 p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                          />
+                          <span className="ml-1 text-gray-500">%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        {formatMoney(line.lineTotal)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => handleRemoveLine(idx)} className="text-gray-400 hover:text-red-500 transition-colors">
+                          <Trash2 className="w-4 h-4 mx-auto" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Card>
+
+          {/* BOTTOM PANE: FINANCIAL SUMMARY */}
+          <Card className="flex-shrink-0 p-6 bg-white border-t-4 border-t-primary-500 shadow-lg">
+            <div className="flex justify-between items-start">
+              <div className="w-1/3">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Quote Health</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Margin Amount</span>
+                    <span className="font-medium text-green-700">{formatMoney(quote.marginAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Margin Percent</span>
+                    <span className="font-medium text-green-700">{formatPercent(quote.marginPercent)}</span>
+                  </div>
+                  <div className="flex justify-between mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-gray-500">Discount Risk Score</span>
+                    <span className={`font-bold ${quote.discountRiskScore > 70 ? 'text-red-600' : 'text-green-600'}`}>
+                      {quote.discountRiskScore} / 100
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Approval Rule</span>
+                    <span className="font-medium text-amber-600">
+                      {quote.approval.requiredLevel.replace('_', ' ')} Required
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-1/3 text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-900 font-medium">{formatMoney(quote.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Discount</span>
+                  <span className="text-red-600 font-medium">-{formatMoney(quote.discountTotal)}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-200 pb-2">
+                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-900 font-medium">{formatMoney(quote.taxTotal)}</span>
+                </div>
+                <div className="flex justify-between pt-2 text-lg">
+                  <span className="font-bold text-gray-900">Grand Total</span>
+                  <span className="font-bold text-gray-900">{formatMoney(quote.grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
 }

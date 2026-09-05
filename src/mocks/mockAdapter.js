@@ -2,7 +2,8 @@ import MockAdapter from 'axios-mock-adapter';
 import api from '../services/api';
 import { 
   mockUser, 
-  mockQuotes, 
+  mockQuotes,
+  mockProducts, 
   mockRecommendations,
   mockOrderFulfillment,
   mockOrderBilling,
@@ -17,6 +18,9 @@ mock.onGet('/auth/me').reply(200, { success: true, data: mockUser });
 
 // Dashboard
 mock.onGet('/dashboard').reply(200, { success: true, data: mockDashboardData });
+
+// Products
+mock.onGet('/products').reply(200, { success: true, data: mockProducts });
 
 // Quotes
 mock.onGet('/quotes').reply(200, { 
