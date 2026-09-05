@@ -1,32 +1,33 @@
-# React + TypeScript + Vite
+# DealFlow360
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> An intelligent, self-governing B2B sales operations platform.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+DealFlow360 manages the complete sales workflow from quotation to approval, fulfillment, billing, customer negotiation, and reporting.
 
-## React Compiler
+The platform focuses on automating real-world B2B sales operations such as:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Discount-based approval routing
+- Upsell and cross-sell recommendations
+- Multi-warehouse fulfillment
+- Hybrid one-time + recurring billing
+- Customer quotation negotiation
+- Deal health and anomaly monitoring
 
-## Expanding the Oxlint configuration
+## Core Flow
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+```text
+Quotation
+   ↓
+Discount & Risk Check
+   ↓
+Approval (if required)
+   ↓
+Warehouse Fulfillment
+   ↓
+Billing
+   ↓
+Customer Negotiation
+   ↓
+Reporting
