@@ -24,7 +24,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Redirect root to dashboard (or login based on auth logic later) */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>

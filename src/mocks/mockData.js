@@ -159,3 +159,22 @@ export const mockDashboardData = {
     { orderId: 'O-0980', expected: '2026-09-01T00:00:00Z', actualStatus: 'Delayed - Customs' }
   ]
 };
+
+export const mockReportData = {
+  quotationCount: 14,
+  orderCount: 8,
+  revenue: 1250000,
+  averageDiscount: 12.3,
+  approvalStats: {
+    approved: 9,
+    rejected: 2,
+    pending: 3,
+    returned: 1,
+  },
+  topProducts: [
+    { name: 'Laptop', unitsSold: 24, revenue: 2400000 },
+    { name: 'Cloud Pro', unitsSold: 18, revenue: 90000 },
+    { name: 'Setup Service', unitsSold: 15, revenue: 300000 },
+    { name: 'Laptop Stand', unitsSold: 12, revenue: 60000 },
+  ],
+};

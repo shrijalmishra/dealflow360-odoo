@@ -7,14 +7,19 @@ import {
   mockRecommendations,
   mockOrderFulfillment,
   mockOrderBilling,
-  mockDashboardData
+  mockDashboardData,
+  mockReportData
 } from './mockData';
 
 const mock = new MockAdapter(api, { delayResponse: 500 }); // simulate network delay
 
 // Auth
 mock.onPost('/auth/login').reply(200, { success: true, data: { token: 'mock-token' } });
+mock.onPost('/auth/signup').reply(200, { success: true, data: { message: 'Account created' } });
 mock.onGet('/auth/me').reply(200, { success: true, data: mockUser });
+
+// Reports
+mock.onGet('/reports').reply(200, { success: true, data: mockReportData });
 
 // Dashboard
 mock.onGet('/dashboard').reply(200, { success: true, data: mockDashboardData });
