@@ -67,7 +67,31 @@ mock.onGet(/\/orders\/[a-zA-Z0-9]+\/billing$/).reply(200, {
 // Customer Portal
 mock.onGet(/\/portal\/quotes\/[a-zA-Z0-9]+$/).reply(200, {
   success: true,
-  data: mockQuotes[0]
+  data: {
+    ...mockQuotes[0],
+    // Strip internal-only fields for the portal view
+    marginAmount: undefined,
+    marginPercent: undefined,
+    discountRiskScore: undefined,
+    approval: undefined,
+  }
+});
+
+mock.onPost(/\/portal\/quotes\/[a-zA-Z0-9]+\/negotiations$/).reply(200, {
+  success: true,
+  data: {
+    message: 'Your negotiation request has been submitted.',
+    newStatus: 'UNDER_NEGOTIATION',
+    approvalRequired: true,
+  }
+});
+
+mock.onPost(/\/portal\/quotes\/[a-zA-Z0-9]+\/confirm$/).reply(200, {
+  success: true,
+  data: {
+    message: 'Quotation confirmed successfully.',
+    newStatus: 'CONFIRMED',
+  }
 });
 
 export default mock;
