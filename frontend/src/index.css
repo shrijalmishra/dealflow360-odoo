@@ -1,0 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────
+   DEALFLOW360 — MONOCHROME EDITORIAL MINIMALIST SYSTEM
+   Inspired by McTwisteD #plain × Swiss Architectural Design
+   95% Monochrome + 5% Semantic Color
+   Negative Space, Hairline Rules, High-Density Hierarchy
+─────────────────────────────────────────────────────────── */
+
+:root {
+  --c-bg: #0a0a0a;
+  --c-fg: #f5f5f5;
+  --c-surface: #111111;
+  --c-rule: #222222;
+  --c-subtle: #71717a;
+  --c-muted: #a1a1aa;
+  
+  --c-success: #10b981;
+  --c-success-bg: rgba(16, 185, 129, 0.1);
+  --c-success-border: rgba(16, 185, 129, 0.25);
+
+  --c-warning: #f59e0b;
+  --c-warning-bg: rgba(245, 158, 11, 0.1);
+  --c-warning-border: rgba(245, 158, 11, 0.25);
+
+  --c-danger: #ef4444;
+  --c-danger-bg: rgba(239, 68, 68, 0.1);
+  --c-danger-border: rgba(239, 68, 68, 0.25);
+
+  --c-info: #3b82f6;
+  --c-info-bg: rgba(59, 130, 246, 0.1);
+  --c-info-border: rgba(59, 130, 246, 0.25);
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Minimal dark scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+
+  /* Crisp high-contrast white text selection */
+  ::selection {
+    background-color: #ffffff;
+    color: #000000;
+  }
+  ::-moz-selection {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  /* Global links hover in crisp white */
+  a {
+    transition: color 0.15s ease, opacity 0.15s ease;
+  }
+  a:hover {
+    color: #ffffff;
+  }
+
+  /* Interactive elements hover in crisp white */
+  button, [role="button"] {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+  button:hover, [role="button"]:hover {
+    color: #ffffff;
+  }
+  .btn-primary, .btn-violet, .btn-primary:hover, .btn-violet:hover {
+    color: #000000 !important;
+  }
+
+  /* Table row hovering elevates text to crisp white */
+  tbody tr {
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  tbody tr:hover td:not([class*="text-rose"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-blue"]) {
+    color: #ffffff;
+  }
+
+  select option {
+    background-color: #111111;
+    color: #f5f5f5;
+  }
+}
+
+/* ── EDITORIAL UTILITIES & SURFACES ── */
+@layer utilities {
+
+  /* Monospace figures for prices, codes, metrics */
+  .font-mono-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Section tracking and metadata labels */
+  .editorial-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #71717a;
+    font-weight: 600;
+  }
+
+  .editorial-rule {
+    border-bottom: 1px solid #222222;
+  }
+
+  /* ── 3-TIER SURFACE SYSTEM ── */
+  /* Level 1: Flat (tables, ledgers, navigation) uses background #0a0a0a directly */
+
+  /* Level 2: Subtle Surface (important summaries, risk evaluation, filters) */
+  .subtle-surface {
+    background-color: #111111;
+    border: 1px solid #222222;
+    border-radius: 6px;
+  }
+
+  /* Level 3: Card (genuinely independent modules & popups) */
+  .df-card, .glass-card, .neu-card {
+    background-color: #111111;
+    border: 1px solid #222222;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .df-card:hover, .glass-card:hover, .neu-card:hover {
+    border-color: #2e2e2e;
+  }
+
+  .df-card-elevated, .glass-elevated {
+    background-color: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ── INPUTS & CONTROLS (Sharp & Minimal) ── */
+  .neu-inset, .glass-input, .glass-select {
+    background-color: #0e0e0e;
+    border: 1px solid #262626;
+    color: #f5f5f5;
+    border-radius: 6px;
+    transition: border-color 0.15s ease;
+  }
+
+  .neu-inset:focus, .glass-input:focus, .glass-select:focus {
+    border-color: #52525b;
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* ── BUTTONS (Monochrome High-Contrast) ── */
+  /* Primary: Crisp White with Deep Black text */
+  .btn-primary, .btn-violet {
+    background-color: #ffffff;
+    color: #000000;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid #ffffff;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+  }
+  .btn-primary:hover, .btn-violet:hover {
+    background-color: #e4e4e7;
+    border-color: #e4e4e7;
+  }
+  .btn-primary:active, .btn-violet:active {
+    background-color: #d4d4d8;
+  }
+
+  /* Secondary: Subtle dark surface */
+  .neu-btn-secondary {
+    background-color: #161616;
+    color: #f5f5f5;
+    border: 1px solid #27272a;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .neu-btn-secondary:hover {
+    background-color: #202020;
+    border-color: #3f3f46;
+  }
+
+  /* Outline: Transparent with clean border */
+  .neu-btn-outline {
+    background-color: transparent;
+    color: #d4d4d8;
+    border: 1px solid #27272a;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .neu-btn-outline:hover {
+    background-color: #161616;
+    color: #ffffff;
+    border-color: #3f3f46;
+  }
+
+  /* ── SIDEBAR & NAVIGATION ── */
+  .editorial-sidebar {
+    background-color: #080808;
+    border-right: 1px solid #1f1f1f;
+  }
+
+  .editorial-header {
+    background-color: #080808;
+    border-bottom: 1px solid #1f1f1f;
+  }
+
+  /* Subtle active navigation: left 2px white indicator */
+  .nav-active {
+    background-color: #141414;
+    color: #ffffff;
+    border-left: 2px solid #ffffff;
+    padding-left: 0.625rem;
+    font-weight: 500;
+  }
+
+  .nav-inactive {
+    color: #8e8e93;
+    border-left: 2px solid transparent;
+  }
+  .nav-inactive:hover {
+    color: #f5f5f5;
+    background-color: #111111;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #52525b;
+    font-weight: 700;
+    padding: 0.5rem 0.75rem 0.25rem;
+  }
+
+  /* Subtle typography helpers */
+  .text-hero {
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .text-page-metric {
+    font-size: 1.75rem; /* 28px */
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+
+  /* Semantic status indicators */
+  .status-dot-green  { width: 6px; height: 6px; border-radius: 50%; background-color: #22c55e; }
+  .status-dot-amber  { width: 6px; height: 6px; border-radius: 50%; background-color: #eab308; }
+  .status-dot-red    { width: 6px; height: 6px; border-radius: 50%; background-color: #ef4444; }
+  .status-dot-blue   { width: 6px; height: 6px; border-radius: 50%; background-color: #3b82f6; }
+  .status-dot-gray   { width: 6px; height: 6px; border-radius: 50%; background-color: #71717a; }
+
+  /* Generic gradient-text removed; replaced with pure white */
+  .gradient-text {
+    color: #ffffff;
+  }
+}
